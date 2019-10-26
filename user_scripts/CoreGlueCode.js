@@ -8,6 +8,7 @@
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 var IodineGUI = {
     Iodine:null,
     Blitter:null,
@@ -20,6 +21,19 @@ var IodineGUI = {
     startTime:(+(new Date()).getTime()),
     mixerInput:null,
     currentSpeed:[false,0],
+    gamepad : {
+        apiID: undefined,
+        timerID: undefined,
+        keybinds: undefined,
+        axes: {
+            last: undefined,
+            cur: [],
+            changed: [] },
+        buttons: {
+            last: undefined,
+            cur: [],
+            changed: [] }
+    },
     defaults:{
         timerRate:8,
         sound:true,
@@ -152,6 +166,81 @@ function updateTimer(newRate) {
 			initTimer();
 		}
 	}
+}
+function findRealClock() {
+	var count = 0;
+	var startTime = +(new Date()).getTime();
+	var realTimer = setInterval(function () {
+		if (!IodineGUI.suspended) {
+			count = ((count | 0) + 1) | 0;
+			if (count == 20) {
+				var timeDiff = ((+(new Date()).getTime()) - (+startTime)) >>> 0;
+				var trueRate = timeDiff / 20;
+				if ((+trueRate) > 17) {
+					count = 0;
+				}
+				else {
+					var delta = +((+trueRate) - (IodineGUI.defaults.timerRate | 0));
+					if ((IodineGUI.defaults.timerRate | 0) == 16) {
+						if (delta > -0.1 && delta < 0.1) {
+							clearInterval(realTimer);
+						}
+						else if ((trueRate - 1000/64) > -0.1 && (trueRate - 1000/64) < 0.1) {
+							IodineGUI.Iodine.setIntervalRate(1000/64);
+							clearInterval(realTimer);
+						}
+						else if ((trueRate - 50/3) > -0.1 && (trueRate - 50/3) < 0.1) {
+							IodineGUI.Iodine.setIntervalRate(50/3);
+							clearInterval(realTimer);
+						}
+						else {
+							count = 0;
+						}
+					}
+					else if ((IodineGUI.defaults.timerRate | 0) == 4) {
+						if (delta > -0.1 && delta < 0.1) {
+							clearInterval(realTimer);
+						}
+						else if ((trueRate - 25/6) > -0.1 && (trueRate - 25/6) < 0.1) {
+							IodineGUI.Iodine.setIntervalRate(25/6);
+							clearInterval(realTimer);
+						}
+						else {
+							count = 0;
+						}
+					}
+					else if ((IodineGUI.defaults.timerRate | 0) == 8) {
+						if (delta > -0.1 && delta < 0.1) {
+							clearInterval(realTimer);
+						}
+						else if ((trueRate - 25/3) > -0.1 && (trueRate - 25/3) < 0.1) {
+							IodineGUI.Iodine.setIntervalRate(25/3);
+							clearInterval(realTimer);
+						}
+						else {
+							count = 0;
+						}
+					}
+					else {
+						if (delta > -0.1 && delta < 0.1) {
+							clearInterval(realTimer);
+						}
+						else if (trueRate < 16) {
+							IodineGUI.Iodine.setIntervalRate(+trueRate);
+							clearInterval(realTimer);
+						}
+						else {
+							count = 0;
+						}
+					}
+
+				}
+			}
+		}
+		else {
+			count = 0;
+		}
+    }, IodineGUI.defaults.timerRate | 0);
 }
 function registerBlitterHandler() {
     IodineGUI.Blitter = new GfxGlueCode(240, 160);
